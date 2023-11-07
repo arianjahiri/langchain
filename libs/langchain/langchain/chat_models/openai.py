@@ -282,31 +282,21 @@ class ChatOpenAI(BaseChatModel):
             default="",
         )
         try:
-            import openai
+            from langchain.adapters.openai import ChatCompletion
 
         except ImportError:
             raise ValueError(
-                "Could not import openai python package. "
-                "Please install it with `pip install openai`."
+                "Could not import ChatCompletion from langchain.adapters.openai. "
+                "Please make sure it is correctly installed and imported."
             )
-
-        if _is_openai_v1():
-            values["client"] = openai.OpenAI(
-                api_key=values["openai_api_key"],
-                timeout=values["request_timeout"],
-                max_retries=values["max_retries"],
-                organization=values["openai_organization"],
-                base_url=values["openai_api_base"] or None,
-            ).chat.completions
-            values["async_client"] = openai.AsyncOpenAI(
-                api_key=values["openai_api_key"],
-                timeout=values["request_timeout"],
-                max_retries=values["max_retries"],
-                organization=values["openai_organization"],
-                base_url=values["openai_api_base"] or None,
-            ).chat.completions
-        else:
-            values["client"] = openai.ChatCompletion
+        try:
+            values["client"] = ChatCompletion.create
+        except AttributeError:
+            raise ValueError(
+                "`ChatCompletion` has no `create` attribute, this is likely "
+                "due to an old version of the langchain package. Try upgrading it "
+                "with `pip install --upgrade langchain`."
+            )
         if values["n"] < 1:
             raise ValueError("n must be at least 1.")
         if values["n"] > 1 and values["streaming"]:
